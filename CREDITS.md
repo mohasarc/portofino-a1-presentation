@@ -14,4 +14,4 @@ Die Bilder werden lokal ausgeliefert und für die bildschirmfüllende Darstellun
 - [Cinque Terre white wine](https://commons.wikimedia.org/wiki/File:Vin_blanc_des_Cinque_Terre.jpg) — Lee Edwin Coursey, CC BY 2.0.
 - Karten: [OpenFreeMap](https://openfreemap.org/), © [OpenMapTiles](https://openmaptiles.org/), Kartendaten © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright).
 
-Musik am Ende: [“Love in Portofino” — Dalida](https://www.youtube.com/watch?v=AKDLoUSaPV8), eingebettet vom offiziellen YouTube-Artist-Kanal. Die Audiodatei wird nicht kopiert oder im Repository verteilt.
+Musik am Ende: [“Love in Portofino” — Dalida](https://music.apple.com/us/song/1736771951), als offizielle 30-Sekunden-Vorschau von Apple Music gestreamt. Die Vorschau wird beim Öffnen im Browser vorgeladen; die Audiodatei wird nicht in das Repository kopiert oder von dieser Website verteilt.

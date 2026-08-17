@@ -15,6 +15,8 @@ import { assetPath, deck, imageSources, type Beat, type MapStage } from './deck'
 
 const LAST_BEAT = deck.beats.length - 1
 const cinematicEase = [0.76, 0, 0.2, 1] as const
+const MUSIC_PREVIEW_URL = import.meta.env.VITE_MUSIC_URL || 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/db/40/b4/db40b445-d1ee-4a4a-6510-bdd8d2dfda7c/mzaf_8392758347063360229.plus.aac.p.m4a'
+const MUSIC_PAGE_URL = 'https://music.apple.com/us/song/1736771951'
 
 type Coordinates = [number, number]
 type MapView = { center: Coordinates; zoom: number; bearing?: number; pitch?: number }
@@ -37,13 +39,41 @@ const genoaRoute: Feature<LineString> = {
   geometry: { type: 'LineString', coordinates: [GENOA, PORTOFINO] },
 }
 
+function waitForMapIdle(map: MapLibreMap, timeout = 12_000) {
+  return new Promise<void>((resolve, reject) => {
+    let timeoutId = 0
+    const cleanup = () => {
+      window.clearTimeout(timeoutId)
+      map.off('idle', onIdle)
+    }
+    const onIdle = () => {
+      if (!map.areTilesLoaded()) return
+      cleanup()
+      resolve()
+    }
+
+    map.on('idle', onIdle)
+    timeoutId = window.setTimeout(() => {
+      cleanup()
+      reject(new Error('Die Karte konnte nicht vollständig vorgeladen werden.'))
+    }, timeout)
+    onIdle()
+  })
+}
+
 function sentenceWithAccent(sentence: string, accent?: string) {
   if (!accent || !sentence.includes(accent)) return sentence
   const [before, after] = sentence.split(accent)
   return <>{before}<em>{accent}</em>{after}</>
 }
 
-function MapJourney({ beat, reducedMotion }: { beat: Beat; reducedMotion: boolean }) {
+function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
+  beat: Beat
+  reducedMotion: boolean
+  preloadAll: boolean
+  onReady: () => void
+  onError: () => void
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const [mapReady, setMapReady] = useState(false)
@@ -67,7 +97,7 @@ function MapJourney({ beat, reducedMotion }: { beat: Beat; reducedMotion: boolea
 
     mapRef.current = map
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
-    map.once('style.load', () => {
+    map.once('style.load', async () => {
       if (disposed) return
       map.addSource('genoa-route', { type: 'geojson', data: genoaRoute })
       map.addLayer({
@@ -95,7 +125,28 @@ function MapJourney({ beat, reducedMotion }: { beat: Beat; reducedMotion: boolea
 
       makeMarker('Portofino', PORTOFINO, 'portofino')
       makeMarker('Genua', GENOA, 'genoa')
-      setMapReady(true)
+
+      if (!preloadAll) {
+        setMapReady(true)
+        onReady()
+        return
+      }
+
+      try {
+        for (const view of Object.values(mapViews)) {
+          if (disposed) return
+          map.jumpTo(view)
+          await waitForMapIdle(map)
+        }
+        if (disposed) return
+        map.jumpTo(mapViews.world)
+        await waitForMapIdle(map)
+        if (disposed) return
+        setMapReady(true)
+        onReady()
+      } catch {
+        if (!disposed) onError()
+      }
     })
 
     return () => {
@@ -104,7 +155,7 @@ function MapJourney({ beat, reducedMotion }: { beat: Beat; reducedMotion: boolea
       map.remove()
       mapRef.current = null
     }
-  }, [])
+  }, [onError, onReady, preloadAll])
 
   useEffect(() => {
     const map = mapRef.current
@@ -312,8 +363,65 @@ function Credits({ onClose }: { onClose: () => void }) {
           </a>
         ))}
       </div>
-      <p className="credits__music">Musik: “Love in Portofino” · Dalida, eingebettet über den offiziellen YouTube-Kanal.</p>
+      <p className="credits__music">Musik: <a href={MUSIC_PAGE_URL} target="_blank" rel="noreferrer">“Love in Portofino” · Dalida</a>, offizielle 30-Sekunden-Vorschau von Apple Music.</p>
     </motion.aside>
+  )
+}
+
+type LoadStatus = 'loading' | 'ready' | 'error'
+
+function PreloadGate({ statuses, ready, onStart, onRetry, reducedMotion }: {
+  statuses: { images: LoadStatus; map: LoadStatus; audio: LoadStatus; fonts: LoadStatus }
+  ready: boolean
+  onStart: () => void
+  onRetry: () => void
+  reducedMotion: boolean
+}) {
+  const items = [
+    ['Bilder', statuses.images],
+    ['Karte', statuses.map],
+    ['Musik', statuses.audio],
+    ['Schriften', statuses.fonts],
+  ] as const
+  const hasError = items.some(([, status]) => status === 'error')
+
+  return (
+    <motion.section
+      className="preload-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="preload-title"
+      initial={false}
+      exit={{ opacity: 0, scale: reducedMotion ? 1 : 1.02 }}
+      transition={{ duration: reducedMotion ? 0 : 0.7, ease: cinematicEase }}
+    >
+      <div className="preload-gate__veil" />
+      <div className="preload-gate__content">
+        <h1 id="preload-title">Portofino</h1>
+        <div className="preload-gate__checks" aria-label="Ladestatus">
+          {items.map(([label, status]) => (
+            <span key={label} className={`preload-gate__check is-${status}`}>
+              <i aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
+        {hasError ? (
+          <>
+            <p className="preload-gate__message">Nicht alle Inhalte konnten geladen werden. Bitte prüfe die Verbindung.</p>
+            <button type="button" className="preload-gate__start" onClick={onRetry}>Noch einmal laden</button>
+          </>
+        ) : (
+          <>
+            <p className="preload-gate__message">{ready ? 'Alles ist bereit.' : 'Die Reise wird vorbereitet …'}</p>
+            <button type="button" className="preload-gate__start" onClick={onStart} disabled={!ready}>
+              Präsentation starten
+              <span aria-hidden="true">→</span>
+            </button>
+          </>
+        )}
+      </div>
+    </motion.section>
   )
 }
 
@@ -324,10 +432,17 @@ export default function App() {
   const pdfMode = initialParams.has('pdf')
   const [index, setIndex] = useState(Number.isFinite(initialBeat) ? Math.max(0, Math.min(LAST_BEAT, initialBeat - 1)) : 0)
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [presentationStarted, setPresentationStarted] = useState(pdfMode)
   const [musicOn, setMusicOn] = useState(false)
   const [creditsOpen, setCreditsOpen] = useState(false)
+  const [imagesStatus, setImagesStatus] = useState<LoadStatus>(pdfMode ? 'ready' : 'loading')
+  const [mapStatus, setMapStatus] = useState<LoadStatus>('loading')
+  const [audioStatus, setAudioStatus] = useState<LoadStatus>(pdfMode ? 'ready' : 'loading')
+  const [audioSource, setAudioSource] = useState<string>()
+  const [fontsStatus, setFontsStatus] = useState<LoadStatus>(pdfMode ? 'ready' : 'loading')
   const wheelLock = useRef(false)
   const swipeStart = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const reducedMotion = Boolean(useReducedMotion()) || staticMode
 
   const pointerX = useMotionValue(0)
@@ -340,21 +455,108 @@ export default function App() {
   const beat = deck.beats[index]
   const progress = ((index + 1) / deck.beats.length) * 100
 
-  const usedMedia = useMemo(() => Array.from(new Set(deck.beats.flatMap((item) => item.media ? [item.media] : []))), [])
+  const usedMedia = useMemo(() => Array.from(new Set([
+    ...deck.beats.flatMap((item) => item.media ? [item.media] : []),
+    assetPath('san-giorgio.jpg'),
+    assetPath('castello-brown.jpg'),
+    assetPath('lighthouse.jpg'),
+  ])), [])
+  const allReady = [imagesStatus, mapStatus, audioStatus, fontsStatus].every((status) => status === 'ready')
+
+  const handleMapReady = useCallback(() => setMapStatus('ready'), [])
+  const handleMapError = useCallback(() => setMapStatus('error'), [])
 
   const goTo = useCallback((next: number) => {
+    if (!presentationStarted) return
     const destination = Math.max(0, Math.min(LAST_BEAT, next))
     setHasInteracted(true)
     if (destination === LAST_BEAT) setMusicOn(true)
     setIndex(destination)
-  }, [])
+  }, [presentationStarted])
 
   useEffect(() => {
-    usedMedia.forEach((src) => { const image = new Image(); image.src = src })
-  }, [usedMedia])
+    if (pdfMode) return
+    let cancelled = false
+
+    Promise.all(usedMedia.map((src) => new Promise<void>((resolve, reject) => {
+      const image = new Image()
+      image.decoding = 'async'
+      image.onload = () => {
+        if ('decode' in image) image.decode().then(resolve, resolve)
+        else resolve()
+      }
+      image.onerror = () => reject(new Error(`Bild konnte nicht geladen werden: ${src}`))
+      image.src = src
+    })))
+      .then(() => { if (!cancelled) setImagesStatus('ready') })
+      .catch(() => { if (!cancelled) setImagesStatus('error') })
+
+    document.fonts.ready
+      .then(() => { if (!cancelled) setFontsStatus('ready') })
+      .catch(() => { if (!cancelled) setFontsStatus('error') })
+
+    return () => { cancelled = true }
+  }, [pdfMode, usedMedia])
+
+  useEffect(() => {
+    if (pdfMode) return
+    let cancelled = false
+    let objectUrl = ''
+
+    fetch(MUSIC_PREVIEW_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Musik konnte nicht geladen werden (${response.status}).`)
+        return response.blob()
+      })
+      .then((blob) => {
+        if (cancelled) return
+        objectUrl = URL.createObjectURL(blob)
+        setAudioSource(objectUrl)
+      })
+      .catch(() => { if (!cancelled) setAudioStatus('error') })
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [pdfMode])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !audioSource || pdfMode) return
+    const ready = () => setAudioStatus('ready')
+    const failed = () => setAudioStatus('error')
+    if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) ready()
+    audio.addEventListener('canplaythrough', ready)
+    audio.addEventListener('error', failed)
+    audio.load()
+    return () => {
+      audio.removeEventListener('canplaythrough', ready)
+      audio.removeEventListener('error', failed)
+    }
+  }, [audioSource, pdfMode])
+
+  const startPresentation = useCallback(async () => {
+    if (!allReady) return
+    const audio = audioRef.current
+    if (audio) {
+      try {
+        audio.volume = 0
+        await audio.play()
+        audio.pause()
+        audio.currentTime = 0
+        audio.volume = 0.9
+      } catch {
+        // The same visible finale control remains available if a browser declines priming.
+      }
+    }
+    setHasInteracted(true)
+    setPresentationStarted(true)
+  }, [allReady])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (!presentationStarted) return
       if (creditsOpen && event.key === 'Escape') { setCreditsOpen(false); return }
       if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(event.key)) {
         event.preventDefault(); setHasInteracted(true); setIndex((current) => {
@@ -370,7 +572,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [creditsOpen])
+  }, [creditsOpen, presentationStarted])
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -380,6 +582,19 @@ export default function App() {
     if (index === LAST_BEAT && hasInteracted) setMusicOn(true)
     if (index !== LAST_BEAT) setMusicOn(false)
   }, [index, hasInteracted])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || pdfMode) return
+    if (presentationStarted && index === LAST_BEAT && musicOn) {
+      audio.currentTime = 0
+      audio.volume = 0.9
+      void audio.play().catch(() => setMusicOn(false))
+    } else {
+      audio.pause()
+      audio.currentTime = 0
+    }
+  }, [index, musicOn, pdfMode, presentationStarted])
 
   return (
     <main
@@ -404,7 +619,7 @@ export default function App() {
     >
       <div className="stage" aria-hidden="true">
         <PhotoBackground beat={beat} parallaxX={parallaxX} parallaxY={parallaxY} reducedMotion={reducedMotion} />
-        <MapJourney beat={beat} reducedMotion={reducedMotion} />
+        <MapJourney beat={beat} reducedMotion={reducedMotion} preloadAll={!pdfMode} onReady={handleMapReady} onError={handleMapError} />
         {beat.kind === 'landmarks' && <div className="landmark-ground" />}
         <div className="grain" />
       </div>
@@ -413,14 +628,7 @@ export default function App() {
         <SceneContent key={beat.id} beat={beat} musicOn={musicOn} setMusicOn={setMusicOn} reducedMotion={reducedMotion} />
       </AnimatePresence>
 
-      {index === LAST_BEAT && musicOn && (
-        <iframe
-          className="music-embed"
-          title="Love in Portofino by Dalida"
-          src="https://www.youtube.com/embed/AKDLoUSaPV8?autoplay=1&controls=0&loop=1&playlist=AKDLoUSaPV8"
-          allow="autoplay; encrypted-media"
-        />
-      )}
+      {!pdfMode && <audio ref={audioRef} className="music-audio" src={audioSource} preload="auto" loop />}
 
       <nav className="journey-nav" aria-label="Präsentationssteuerung">
         <button type="button" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Zurück">←</button>
@@ -435,6 +643,17 @@ export default function App() {
       )}
 
       <AnimatePresence>{creditsOpen && <Credits onClose={() => setCreditsOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {!presentationStarted && !pdfMode && (
+          <PreloadGate
+            statuses={{ images: imagesStatus, map: mapStatus, audio: audioStatus, fonts: fontsStatus }}
+            ready={allReady}
+            onStart={startPresentation}
+            onRetry={() => window.location.reload()}
+            reducedMotion={reducedMotion}
+          />
+        )}
+      </AnimatePresence>
       <p className="sr-only" role="status">{`Station ${index + 1} von ${deck.beats.length}: ${beat.sentence}`}</p>
     </main>
   )
