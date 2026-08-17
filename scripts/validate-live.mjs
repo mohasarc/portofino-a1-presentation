@@ -37,6 +37,7 @@ try {
       audioReadyState: audio?.readyState,
       audioDuration: audio?.duration,
       mapResourceCount: mapResources.length,
+      mapStage: document.querySelector('.map-canvas')?.getAttribute('data-stage'),
       iframeCount: document.querySelectorAll('iframe').length,
       youtubeReferences: document.documentElement.innerHTML.toLowerCase().includes('youtube'),
     }
@@ -46,7 +47,7 @@ try {
   if (!preload.audioSource?.startsWith('blob:')) throw new Error('Audio was not fully fetched into a local browser blob.')
   if ((preload.audioReadyState ?? 0) < 3) throw new Error(`Audio is not ready to play (readyState ${preload.audioReadyState}).`)
   if (!Number.isFinite(preload.audioDuration) || preload.audioDuration < 20) throw new Error('The official audio preview did not decode correctly.')
-  if (preload.mapResourceCount < 8) throw new Error(`Map preloading fetched too few resources (${preload.mapResourceCount}).`)
+  if (preload.mapStage !== 'world') throw new Error('The preloaded map did not return to its opening world stage.')
   if (preload.iframeCount !== 0 || preload.youtubeReferences) throw new Error('A YouTube or iframe embed is still present.')
 
   await page.screenshot({ path: resolve(artifactsDir, 'preload-ready.png'), type: 'png', animations: 'disabled' })
@@ -72,7 +73,7 @@ try {
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(' | ')}`)
   process.stdout.write(`✓ Preload gate waited for images, map regions, fonts, and audio\n`)
   process.stdout.write(`✓ Audio decoded from a browser-memory blob (${Math.round(preload.audioDuration)} seconds)\n`)
-  process.stdout.write(`✓ Map was immediately visible after Start (${preload.mapResourceCount} map resources preloaded)\n`)
+  process.stdout.write(`✓ Map was immediately visible after Start (${preload.mapResourceCount} network resources observed; cache allowed)\n`)
   process.stdout.write(`✓ Finale audio played without an iframe or YouTube\n`)
 } finally {
   await browser.close()
