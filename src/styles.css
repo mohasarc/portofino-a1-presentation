@@ -124,6 +124,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sun); outline-o
 .sentence--map.sentence--right { border-left: 0; border-right: 7px solid var(--coral); }
 .sentence--map h1 { font-size: clamp(40px, 4.5vw, 70px); line-height: 1.03; text-shadow: none; }
 .sentence--map h1 em { color: var(--coral); }
+.sentence--map.sentence--genua {
+  top: 11vh;
+  bottom: auto;
+  width: min(700px, 58vw);
+}
 
 .sentence--tourism { top: 26%; }
 .sentence--tourism h1 { font-size: clamp(55px, 7.2vw, 110px); }
@@ -196,24 +201,30 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sun); outline-o
 .landmark-gallery img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.82) contrast(1.03); }
 .landmark-gallery figure::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(4, 24, 29, 0.8), transparent 54%); }
 .landmark-gallery figcaption { position: absolute; z-index: 2; left: 30px; bottom: 112px; font-family: "Newsreader Variable", Georgia, serif; font-size: clamp(27px, 2.9vw, 47px); text-shadow: 0 3px 20px rgba(0, 0, 0, 0.55); }
-.landmark-title {
+.landmark-title-wrap {
   position: absolute;
   z-index: 8;
-  top: 32px;
-  left: 50%;
+  top: 24px;
+  left: 28px;
+  right: 28px;
+  text-align: center;
+}
+.landmark-title {
+  display: inline-block;
   margin: 0;
-  padding: 10px 18px;
-  transform: translateX(-50%);
+  max-width: 100%;
+  padding: 12px 20px 13px;
   color: var(--stucco);
   background: rgba(4, 24, 29, 0.58);
   backdrop-filter: blur(10px);
   font-family: "Newsreader Variable", Georgia, serif;
-  font-size: clamp(34px, 3.5vw, 54px);
+  font-size: clamp(25px, 2.25vw, 34px);
   font-weight: 430;
-  line-height: 1;
-  letter-spacing: -0.04em;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
   text-shadow: 0 3px 22px rgba(0, 0, 0, 0.45);
-  white-space: nowrap;
+  text-align: center;
+  text-wrap: balance;
 }
 
 .finale-content {
@@ -310,11 +321,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sun); outline-o
   .sentence h1 { font-size: clamp(42px, 12vw, 70px); }
   .sentence--map { bottom: 15vh; padding: 22px; }
   .sentence--map h1 { font-size: clamp(34px, 9vw, 54px); }
+  .sentence--map.sentence--genua { top: 10vh; bottom: auto; width: calc(100vw - 44px); }
   .landmark-gallery { grid-template-columns: 1fr; }
   .landmark-gallery figure { position: absolute; inset: 0; }
   .landmark-gallery figure:nth-child(2) { clip-path: inset(0 0 0 64%) !important; }
   .landmark-gallery figure:nth-child(3) { clip-path: inset(0 0 0 82%) !important; }
-  .landmark-title { top: 18px; max-width: calc(100vw - 36px); font-size: clamp(28px, 8vw, 42px); }
+  .landmark-title-wrap { top: 14px; left: 18px; right: 18px; }
+  .landmark-title { font-size: clamp(21px, 5.8vw, 29px); }
   .journey-nav { right: 12px; bottom: 12px; width: calc(100vw - 24px); }
   .landmark-gallery figcaption { bottom: 92px; }
   .maplibregl-ctrl-bottom-left { bottom: 76px; }

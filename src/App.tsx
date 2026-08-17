@@ -252,7 +252,16 @@ function SceneContent({ beat, musicOn, setMusicOn, reducedMotion }: {
     return (
       <>
         <LandmarkGallery active />
-        <motion.h2 className="landmark-title" initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38, duration: 0.7, ease: cinematicEase }}>Sehenswürdigkeiten</motion.h2>
+        <div className="landmark-title-wrap">
+          <motion.h2
+            className="landmark-title"
+            initial={reducedMotion ? false : { opacity: 0, y: -18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: reducedMotion ? 0 : 0.38, duration: reducedMotion ? 0 : 0.7, ease: cinematicEase }}
+          >
+            {beat.sentence}
+          </motion.h2>
+        </div>
       </>
     )
   }
@@ -271,7 +280,7 @@ function SceneContent({ beat, musicOn, setMusicOn, reducedMotion }: {
 
   return (
     <motion.div
-      className={`sentence sentence--${beat.align ?? 'left'} sentence--${beat.kind}`}
+      className={`sentence sentence--${beat.align ?? 'left'} sentence--${beat.kind} sentence--${beat.id}`}
       initial={reducedMotion ? false : { opacity: 0, y: 34 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -26 }}
