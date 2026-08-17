@@ -39,15 +39,14 @@ const genoaRoute: Feature<LineString> = {
   geometry: { type: 'LineString', coordinates: [GENOA, PORTOFINO] },
 }
 
-function waitForMapIdle(map: MapLibreMap, timeout = 12_000) {
-  return new Promise<void>((resolve, reject) => {
+function waitForMapSettle(map: MapLibreMap, timeout = 900) {
+  return new Promise<void>((resolve) => {
     let timeoutId = 0
     const cleanup = () => {
       window.clearTimeout(timeoutId)
       map.off('idle', onIdle)
     }
     const onIdle = () => {
-      if (!map.areTilesLoaded()) return
       cleanup()
       resolve()
     }
@@ -55,9 +54,8 @@ function waitForMapIdle(map: MapLibreMap, timeout = 12_000) {
     map.on('idle', onIdle)
     timeoutId = window.setTimeout(() => {
       cleanup()
-      reject(new Error('Die Karte konnte nicht vollständig vorgeladen werden.'))
+      resolve()
     }, timeout)
-    onIdle()
   })
 }
 
@@ -67,12 +65,11 @@ function sentenceWithAccent(sentence: string, accent?: string) {
   return <>{before}<em>{accent}</em>{after}</>
 }
 
-function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
+function MapJourney({ beat, reducedMotion, preloadAll, onReady }: {
   beat: Beat
   reducedMotion: boolean
   preloadAll: boolean
   onReady: () => void
-  onError: () => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -85,6 +82,9 @@ function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
 
     const markers: Marker[] = []
     let disposed = false
+    let preloadActive = true
+    let preloadFinished = false
+    let safetyTimer = 0
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: 'https://tiles.openfreemap.org/styles/fiord',
@@ -97,6 +97,18 @@ function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
 
     mapRef.current = map
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
+    const finishPreload = () => {
+      if (disposed || preloadFinished) return
+      preloadFinished = true
+      preloadActive = false
+      window.clearTimeout(safetyTimer)
+      map.stop()
+      map.jumpTo(mapViews.world)
+      setMapReady(true)
+      onReady()
+    }
+    safetyTimer = window.setTimeout(finishPreload, 8_000)
+
     map.once('style.load', async () => {
       if (disposed) return
       map.addSource('genoa-route', { type: 'geojson', data: genoaRoute })
@@ -127,35 +139,30 @@ function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
       makeMarker('Genua', GENOA, 'genoa')
 
       if (!preloadAll) {
-        setMapReady(true)
-        onReady()
+        finishPreload()
         return
       }
 
-      try {
-        for (const view of Object.values(mapViews)) {
-          if (disposed) return
-          map.jumpTo(view)
-          await waitForMapIdle(map)
-        }
-        if (disposed) return
-        map.jumpTo(mapViews.world)
-        await waitForMapIdle(map)
-        if (disposed) return
-        setMapReady(true)
-        onReady()
-      } catch {
-        if (!disposed) onError()
+      for (const view of Object.values(mapViews)) {
+        if (disposed || !preloadActive) return
+        map.jumpTo(view)
+        await waitForMapSettle(map)
       }
+      if (disposed || !preloadActive) return
+      map.jumpTo(mapViews.world)
+      await waitForMapSettle(map, 1_200)
+      finishPreload()
     })
 
     return () => {
       disposed = true
+      preloadActive = false
+      window.clearTimeout(safetyTimer)
       markers.forEach((marker) => marker.remove())
       map.remove()
       mapRef.current = null
     }
-  }, [onError, onReady, preloadAll])
+  }, [onReady, preloadAll])
 
   useEffect(() => {
     const map = mapRef.current
@@ -164,7 +171,9 @@ function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
 
     const stage = beat.id === 'paradies' ? 'world' : (beat.mapStage ?? 'italy')
     container.dataset.stage = stage
-    map.setLayoutProperty('genoa-route-line', 'visibility', stage === 'genoa' ? 'visible' : 'none')
+    if (map.getLayer('genoa-route-line')) {
+      map.setLayoutProperty('genoa-route-line', 'visibility', stage === 'genoa' ? 'visible' : 'none')
+    }
 
     const move = (view: MapView, duration: number) => {
       if (reducedMotion) map.jumpTo(view)
@@ -209,6 +218,7 @@ function MapJourney({ beat, reducedMotion, preloadAll, onReady, onError }: {
       transition={dissolving ? { duration: 2.4, times: [0, 0.52, 1] } : { duration: 0.7 }}
       aria-hidden="true"
     >
+      <img className="map-fallback" src={assetPath('world.svg')} alt="" />
       <div ref={containerRef} className="map-canvas" />
       <div className="map-cinematic-tint" />
 
@@ -460,11 +470,11 @@ export default function App() {
     assetPath('san-giorgio.jpg'),
     assetPath('castello-brown.jpg'),
     assetPath('lighthouse.jpg'),
+    assetPath('world.svg'),
   ])), [])
   const allReady = [imagesStatus, mapStatus, audioStatus, fontsStatus].every((status) => status === 'ready')
 
   const handleMapReady = useCallback(() => setMapStatus('ready'), [])
-  const handleMapError = useCallback(() => setMapStatus('error'), [])
 
   const goTo = useCallback((next: number) => {
     if (!presentationStarted) return
@@ -619,7 +629,7 @@ export default function App() {
     >
       <div className="stage" aria-hidden="true">
         <PhotoBackground beat={beat} parallaxX={parallaxX} parallaxY={parallaxY} reducedMotion={reducedMotion} />
-        <MapJourney beat={beat} reducedMotion={reducedMotion} preloadAll={!pdfMode} onReady={handleMapReady} onError={handleMapError} />
+        <MapJourney beat={beat} reducedMotion={reducedMotion} preloadAll={!pdfMode} onReady={handleMapReady} />
         {beat.kind === 'landmarks' && <div className="landmark-ground" />}
         <div className="grain" />
       </div>

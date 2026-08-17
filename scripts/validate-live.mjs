@@ -4,6 +4,7 @@ import { chromium } from 'playwright'
 
 const baseUrl = process.env.DECK_URL ?? 'http://127.0.0.1:5173/'
 const artifactsDir = resolve(process.env.VALIDATION_DIR ?? '/tmp/portofino-live-validation')
+const blockMapProvider = process.env.BLOCK_MAP === '1'
 
 await mkdir(artifactsDir, { recursive: true })
 
@@ -12,6 +13,10 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, dev
 const pageErrors = []
 
 page.on('pageerror', (error) => pageErrors.push(error.message))
+
+if (blockMapProvider) {
+  await page.route(/openfreemap\.org/, (route) => route.abort('connectionfailed'))
+}
 
 try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
@@ -73,7 +78,7 @@ try {
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(' | ')}`)
   process.stdout.write(`✓ Preload gate waited for images, map regions, fonts, and audio\n`)
   process.stdout.write(`✓ Audio decoded from a browser-memory blob (${Math.round(preload.audioDuration)} seconds)\n`)
-  process.stdout.write(`✓ Map was immediately visible after Start (${preload.mapResourceCount} network resources observed; cache allowed)\n`)
+  process.stdout.write(`✓ Map gate completed${blockMapProvider ? ' with the provider blocked' : ` (${preload.mapResourceCount} network resources observed; cache allowed)`}\n`)
   process.stdout.write(`✓ Finale audio played without an iframe or YouTube\n`)
 } finally {
   await browser.close()

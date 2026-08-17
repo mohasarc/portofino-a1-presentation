@@ -136,7 +136,16 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sun); outline-o
 .tourist-flow i { width: 10px; height: 10px; border: 1px solid var(--stucco); border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 4px rgba(4, 24, 29, 0.22); }
 
 .map-layer { z-index: 2; overflow: hidden; background: #263c49; }
-.map-canvas { position: absolute; inset: 0; background: #263c49; }
+.map-fallback {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  opacity: 0.32;
+  filter: invert(19%) sepia(16%) saturate(890%) hue-rotate(164deg) brightness(78%) contrast(92%);
+}
+.map-canvas { position: absolute; inset: 0; background: transparent; }
 .map-canvas .maplibregl-canvas { filter: saturate(0.78) contrast(1.06); }
 .map-cinematic-tint {
   position: absolute;
