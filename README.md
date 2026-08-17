@@ -6,6 +6,8 @@ Die Seite wird bei jedem Push auf `main` automatisch über GitHub Pages veröffe
 
 [Präsentation öffnen](https://mohasarc.github.io/portofino-a1-presentation/)
 
+[PDF-Backup herunterladen](exports/Portofino-A1-Backup.pdf)
+
 ## Start
 
 ```bash
@@ -26,6 +28,7 @@ Beim Erreichen des Schlussbilds wird Dalidas „Love in Portofino“ über den o
 ```bash
 npm run check
 npm run build
+npm run export:pdf
 ```
 
 Die lokal gespeicherten Fotos stammen aus Wikimedia Commons. Vollständige Angaben stehen in [CREDITS.md](CREDITS.md) und im eingebauten Dialog „Bildnachweise“.

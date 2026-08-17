@@ -321,6 +321,7 @@ export default function App() {
   const initialParams = new URLSearchParams(window.location.search)
   const initialBeat = Number(initialParams.get('beat'))
   const staticMode = initialParams.has('static')
+  const pdfMode = initialParams.has('pdf')
   const [index, setIndex] = useState(Number.isFinite(initialBeat) ? Math.max(0, Math.min(LAST_BEAT, initialBeat - 1)) : 0)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [musicOn, setMusicOn] = useState(false)
@@ -382,7 +383,7 @@ export default function App() {
 
   return (
     <main
-      className={`journey journey--${beat.kind}`}
+      className={`journey journey--${beat.kind}${pdfMode ? ' journey--pdf' : ''}`}
       onPointerMove={(event) => {
         pointerX.set((event.clientX / window.innerWidth - 0.5) * 24)
         pointerY.set((event.clientY / window.innerHeight - 0.5) * 18)
@@ -428,6 +429,10 @@ export default function App() {
         <button type="button" onClick={() => goTo(index + 1)} disabled={index === LAST_BEAT} aria-label="Weiter">→</button>
         <button className="credits-trigger" type="button" onClick={() => setCreditsOpen(true)} aria-label="Bildnachweise" title="Bildnachweise">ⓘ</button>
       </nav>
+
+      {pdfMode && beat.kind === 'map' && (
+        <p className="pdf-map-credit">© OpenFreeMap · © OpenMapTiles · © OpenStreetMap-Mitwirkende</p>
+      )}
 
       <AnimatePresence>{creditsOpen && <Credits onClose={() => setCreditsOpen(false)} />}</AnimatePresence>
       <p className="sr-only" role="status">{`Station ${index + 1} von ${deck.beats.length}: ${beat.sentence}`}</p>

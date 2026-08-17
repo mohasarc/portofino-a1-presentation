@@ -286,6 +286,22 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--sun); outline-o
 .journey-nav__count { font-size: 9px; font-weight: 680; letter-spacing: 0.08em; white-space: nowrap; opacity: 0.72; }
 .journey-nav .credits-trigger { border-left: 1px solid rgba(246, 240, 227, 0.2); font-size: 17px; }
 
+.journey--pdf .journey-nav,
+.journey--pdf .music-toggle,
+.journey--pdf .maplibregl-control-container { display: none; }
+.pdf-map-credit {
+  position: absolute;
+  z-index: 30;
+  left: 18px;
+  bottom: 14px;
+  margin: 0;
+  padding: 5px 8px;
+  color: var(--stucco);
+  background: rgba(4, 24, 29, 0.72);
+  font-size: 8px;
+  letter-spacing: 0.02em;
+}
+
 .credits {
   position: absolute;
   z-index: 60;
