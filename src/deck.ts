@@ -1,5 +1,5 @@
 export type MapStage = 'italy' | 'liguria' | 'genoa' | 'portofino'
-export type BeatKind = 'hero' | 'map' | 'photo' | 'stat' | 'tourism' | 'landmarks' | 'finale'
+export type BeatKind = 'hero' | 'map' | 'photo' | 'tourism' | 'landmarks' | 'finale'
 
 export type Beat = {
   id: string
@@ -11,7 +11,6 @@ export type Beat = {
   align?: 'left' | 'right' | 'center'
   crop?: { scale: number; x: number; y: number }
   accent?: string
-  stat?: string
 }
 
 export const assetPath = (filename: string) => `${import.meta.env.BASE_URL}images/${filename}`
@@ -79,12 +78,11 @@ export const deck = {
     {
       id: 'menschen',
       section: 'Das Dorf',
-      kind: 'stat',
+      kind: 'photo',
       sentence: 'Dort leben ungefähr 355 Menschen.',
       media: assetPath('portofino-harbor.jpg'),
       align: 'right',
       crop: { scale: 1.16, x: -42, y: 0 },
-      stat: '355',
     },
     {
       id: 'sommer',
@@ -196,5 +194,4 @@ export const imageSources = [
   { label: 'Focaccia genovese', author: 'Teatroge', url: 'https://commons.wikimedia.org/wiki/File:Focaccia_genovese_su_tagliere_in_legno,_1.jpg' },
   { label: 'Fritto misto', author: 'Sergio Conti', url: 'https://commons.wikimedia.org/wiki/File:Fritto_misto_di_pesce_con_limone.jpg' },
   { label: 'Cinque Terre wine', author: 'Lee Edwin Coursey', url: 'https://commons.wikimedia.org/wiki/File:Vin_blanc_des_Cinque_Terre.jpg' },
-  { label: 'World map', author: 'John Harvey / CIA World Factbook', url: 'https://commons.wikimedia.org/wiki/File:BlankMap-World-Equirectangular.svg' },
 ]

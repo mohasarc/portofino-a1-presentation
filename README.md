@@ -1,6 +1,6 @@
 # Portofino — eine filmische Deutsch-A1-Reise
 
-Eine fotografische Web-Präsentation, die sich wie eine durchgehende Kamerafahrt anfühlt: Weltkarte → Europa → Italien → Ligurien → Portofino, danach Küste, Dorf, Menschen, Sehenswürdigkeiten, Essen und persönliche Meinung.
+Eine fotografische Web-Präsentation, die sich wie eine durchgehende Kamerafahrt anfühlt: eine geografisch präzise MapLibre-Reise von der Welt → Europa → Italien → Ligurien → Portofino, danach Küste, Dorf, Menschen, Sehenswürdigkeiten, Essen und persönliche Meinung.
 
 Die Seite wird bei jedem Push auf `main` automatisch über GitHub Pages veröffentlicht.
 

@@ -12,6 +12,6 @@ Die Bilder werden lokal ausgeliefert und für die bildschirmfüllende Darstellun
 - [Focaccia genovese](https://commons.wikimedia.org/wiki/File:Focaccia_genovese_su_tagliere_in_legno,_1.jpg) — Teatroge, CC0.
 - [Fritto misto](https://commons.wikimedia.org/wiki/File:Fritto_misto_di_pesce_con_limone.jpg) — Sergio Conti, CC BY-SA 2.0.
 - [Cinque Terre white wine](https://commons.wikimedia.org/wiki/File:Vin_blanc_des_Cinque_Terre.jpg) — Lee Edwin Coursey, CC BY 2.0.
-- [Equirectangular world map](https://commons.wikimedia.org/wiki/File:BlankMap-World-Equirectangular.svg) — John Harvey / CIA World Factbook derivatives, public domain.
+- Karten: [OpenFreeMap](https://openfreemap.org/), © [OpenMapTiles](https://openmaptiles.org/), Kartendaten © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright).
 
 Musik am Ende: [“Love in Portofino” — Dalida](https://www.youtube.com/watch?v=AKDLoUSaPV8), eingebettet vom offiziellen YouTube-Artist-Kanal. Die Audiodatei wird nicht kopiert oder im Repository verteilt.
