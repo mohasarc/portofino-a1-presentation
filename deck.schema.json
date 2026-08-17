@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kinetic Deck AI authoring contract",
+  "type": "object",
+  "required": ["meta", "slides"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["title", "instruction"],
+      "properties": {
+        "title": { "type": "string" },
+        "instruction": { "type": "string" }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "chapter", "kicker", "title", "body", "camera"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["overture", "system", "finale"] },
+          "chapter": { "type": "string" },
+          "kicker": { "type": "string" },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "camera": {
+            "type": "object",
+            "required": ["x", "y", "zoom", "rotate"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "zoom": { "type": "number", "minimum": 0.5, "maximum": 1.5 },
+              "rotate": { "type": "number", "minimum": -5, "maximum": 5 }
+            }
+          }
+        }
+      }
+    }
+  }
+}
